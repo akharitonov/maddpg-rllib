@@ -26,6 +26,21 @@ sudo docker run -e dboxtoken=YOUR_TOKEN -e dboxdir=/epxeriment_1 --name maddpgrl
 
 If you want the results to be uploaded to Dropbox, you'll need to setup an app in your account [App console](https://www.dropbox.com/developers/apps) in order to get a token.
 
+---
+
+## Running in docker (CUDA)
+
+[Local installation instructions](./INSTALL_CUDA.md)
+
+```
+sudo docker build -t maddpg-rllib-cuda:latest -f cuda.Dockerfile .
+```
+
+```
+sudo docker run  --gpus all -e dboxtoken=YOUR_TOKEN -e dboxdir=/epxeriment_1 --name maddpgrllib-test-cuda --shm-size=4gb maddpg-rllib:latest
+```
+
+
 
 ***
 Fork of [wsjeon/maddpg-rllib](https://github.com/wsjeon/maddpg-rllib)
