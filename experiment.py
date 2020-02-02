@@ -57,6 +57,7 @@ def write_to_log_ts(msg, is_error: bool):
 
 def execute_command(cmd) -> bool:
     try:
+        write_to_log_start(cmd)
         os.system(cmd)
         return True
     except Exception:
@@ -105,8 +106,8 @@ def upload(file_to_upload, folder, subfolder, name, overwrite=False):
     except ApiError as err:
         write_to_log_ts('Dropbox error: ' + err.error, True)
         return None
-    except Exception as gen_err:
-        write_to_log_ts('Dropbox general error: ' + gen_err.error, True)
+    except Exception:
+        write_to_log_ts('Dropbox general error: ' + traceback.format_exc(), True)
 
 
 def upload_to_dropbox(run_result_folder, experiment_name):
