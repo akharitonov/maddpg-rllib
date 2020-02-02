@@ -7,8 +7,7 @@ RUN apt-get install -y git libsm6 libxext6 libxrender-dev ssh rsync
 # Ray rllib
 RUN apt-get install -y libxrender1
 RUN pip install --progress-bar off psutil
-#RUN pip install --progress-bar off tabulate==0.8.6
-# Running with Ray 0.8.0.dev3, update the version if needed. Compatibility of the scripts might be needed adjutment.
+RUN pip install --progress-bar off tabulate==0.8.6
 RUN pip install --progress-bar off -U https://s3-us-west-2.amazonaws.com/ray-wheels/latest/ray-0.8.0.dev3-cp36-cp36m-manylinux1_x86_64.whl
 RUN pip install --progress-bar off requests
 

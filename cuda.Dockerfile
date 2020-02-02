@@ -1,5 +1,5 @@
-FROM nvidia/cuda:9.0-base-ubuntu16.04
-
+FROM nvidia/cuda:9.2-base-ubuntu18.04
+# https://gitlab.com/nvidia/container-images/cuda/blob/master/doc/supported-tags.md
 SHELL ["/bin/bash", "-c"]
 
 RUN apt-get update
@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     cmake \
     git \
     sudo \
+    rsync \
     wget \
     software-properties-common \
     libsm6 \
@@ -23,14 +24,17 @@ ENV HOME /home
 WORKDIR ${HOME}/
 
 # Download Miniconda
-RUN wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh && \
-    chmod +x miniconda.sh && \
-    ./miniconda.sh -b -p ${HOME}/miniconda3 && \
-    rm miniconda.sh
+# https://docs.anaconda.com/anaconda/install/silent-mode/
+RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh && \
+    chmod +x ~/miniconda.sh
+RUN bash ~/miniconda.sh -b -p $HOME/miniconda
+RUN rm miniconda.sh
 
-ENV PATH ${HOME}/miniconda3/bin:$PATH
-ENV CONDA_PATH ${HOME}/miniconda3
+ENV PATH ${HOME}/miniconda/bin:$PATH
+ENV CONDA_PATH ${HOME}/miniconda
 ENV LD_LIBRARY_PATH ${CONDA_PATH}/lib:${LD_LIBRARY_PATH}
+
+RUN eval "$(conda shell.bash hook)"
 
 RUN mkdir p /code
 # Temporary direcotory for RAY

@@ -37,7 +37,7 @@ sudo docker build -t maddpg-rllib-cuda:latest -f cuda.Dockerfile .
 ```
 
 ```
-sudo docker run  --gpus all -e dboxtoken=YOUR_TOKEN -e dboxdir=/epxeriment_1 --name maddpgrllib-test-cuda --shm-size=4gb maddpg-rllib:latest
+sudo docker run  --gpus all -e dboxtoken=YOUR_TOKEN -e dboxdir=/epxeriment_1 --name maddpgrllib-test-cuda --shm-size=4gb maddpg-rllib-cuda:latest
 ```
 
 
