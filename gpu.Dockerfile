@@ -36,4 +36,4 @@ RUN mkdir -p /ray_temp
 RUN mkdir -p /ray_results
 
 # Run experiments
-ENTRYPOINT python experiment.py --temp-dir /ray_temp--local-dir/ray_results --r 10 --dbox-token ${dboxtoken} --dbox-dir ${dboxdir} --num-gpus 1
+ENTRYPOINT python experiment.py --temp-dir /ray_temp --local-dir /ray_results --r 10 --dbox-token ${dboxtoken} --dbox-dir ${dboxdir} --num-gpus 1
