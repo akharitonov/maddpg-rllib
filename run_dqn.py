@@ -1,48 +1,25 @@
 import ray
 from ray.tune import run_experiments
-from ray.tune.registry import register_trainable, register_env
-from ray.rllib.contrib.maddpg.maddpg import MADDPGTrainer
+from ray.tune.registry import register_env
 from env import MultiAgentParticleEnv
+
+from ray.rllib.agents.dqn import DQNTrainer
 
 import argparse
 import os
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # {'0': 'DEBUG', '1': 'INFO', '2': 'WARNING', '3': 'ERROR'}
 
-# https://ray.readthedocs.io/en/latest/installation.html
-
-class CustomStdOut(object):
-    def _log_result(self, result):
-        if result["training_iteration"] % 50 == 0:
-            try:
-                print("steps: {}, episodes: {}, mean episode reward: {}, agent episode reward: {}, time: {}".format(
-                    result["timesteps_total"],
-                    result["episodes_total"],
-                    result["episode_reward_mean"],
-                    result["policy_reward_mean"],
-                    round(result["time_total_s"] - self.cur_time, 3)
-                ))
-            except:
-                pass
-
-            self.cur_time = result["time_total_s"]
-
 
 def parse_args():
-    parser = argparse.ArgumentParser("MADDPG with OpenAI MPE")
+    parser = argparse.ArgumentParser("Ray DQN with OpenAI MPE")
 
     # Environment
     parser.add_argument("--scenario", type=str, default="simple",
-                        choices=['simple',
-                                 'simple_speaker_listener',
-                                 'simple_crypto',
-                                 'simple_push',
-                                 'simple_tag',
-                                 'simple_spread',
-                                 'simple_adversary',
-                                 'simple_adversary_m',  # modified scenario
-                                 'simple_speaker_listener_m',  # modified scenario
-                                 'multi_speaker_listener'],
+                        choices=['simple', 'simple_speaker_listener',
+                                 'simple_crypto', 'simple_push',
+                                 'simple_tag', 'simple_spread', 'simple_adversary',
+                                 'simple_adversary_m', 'simple_speaker_listener_m'],
                         help="name of the scenario script")
     parser.add_argument("--max-episode-len", type=int, default=25,
                         help="maximum episode length")
@@ -50,10 +27,9 @@ def parse_args():
                         help="number of episodes")
     parser.add_argument("--num-adversaries", type=int, default=0,
                         help="number of adversaries")
-    parser.add_argument("--good-policy", type=str, default="maddpg",
-                        help="policy for good agents")
-    parser.add_argument("--adv-policy", type=str, default="maddpg",
-                        help="policy of adversaries")
+    parser.add_argument("--trainer", type=str, default="dqn",
+                        choices=["dqn"],
+                        help="Trainer")
 
     # Core training parameters
     parser.add_argument("--lr", type=float, default=1e-2,
@@ -94,30 +70,20 @@ def parse_args():
 
 
 def main(args):
-    #ray.init(redis_max_memory=int(1e10), object_store_memory=int(3e9))
-    #memory=int(6200000000)
-    #ray.init(memory=int(4200000000), object_store_memory=int(2200000000), num_gpus=1, num_cpus=6)
-    """
     ray.init(redis_max_memory=int(ray.utils.get_system_memory() * 0.4),
              memory=int(ray.utils.get_system_memory() * 0.2),
              object_store_memory=int(ray.utils.get_system_memory() * 0.2),
-             huge_pages=False,
-             num_gpus=1,
-             num_cpus=6,
-             temp_dir='/mnt/hdd-a500/Ray_temp/')
-    """
-    ray.init(redis_max_memory=int(ray.utils.get_system_memory() * 0.4),
-             memory=int(ray.utils.get_system_memory() * 0.2),
-             object_store_memory=int(ray.utils.get_system_memory() * 0.2),
-            # huge_pages=False,
              num_gpus=1,
              num_cpus=6,
              temp_dir=args.temp_dir)
 
-    MADDPGAgent = MADDPGTrainer.with_updates(
-        mixins=[CustomStdOut]
-    )
-    register_trainable("MADDPG", MADDPGAgent)
+    discrete_action_input = False
+
+    if args.trainer == 'dqn':
+        trainer = DQNTrainer
+        discrete_action_input = True
+    else:
+        raise Exception('Unknown trainer: "{}"'.format(args.trainer))
 
     def env_creater(mpe_args):
         return MultiAgentParticleEnv(**mpe_args)
@@ -126,20 +92,17 @@ def main(args):
 
     env = env_creater({
         "scenario_name": args.scenario,
+        "discrete_action_input": discrete_action_input
     })
 
     def gen_policy(i):
-        use_local_critic = [
-            args.adv_policy == "ddpg" if i < args.num_adversaries else
-            args.good_policy == "ddpg" for i in range(env.num_agents)
-        ]
         return (
             None,
             env.observation_space_dict[i],
             env.action_space_dict[i],
             {
                 "agent_id": i,
-                "use_local_critic": use_local_critic[i],
+                "use_local_critic": False,
                 "obs_space_dict": env.observation_space_dict,
                 "act_space_dict": env.action_space_dict,
             }
@@ -153,9 +116,10 @@ def main(args):
 
     exp_name = "{}{}".format(args.scenario.replace("_", "").replace("-", ""),
                              "_{}".format(args.add_postfix) if args.add_postfix != "" else "")
+
     run_experiments({
         exp_name: {
-            "run": "contrib/MADDPG",
+            "run": trainer,
             "env": "mpe",
             "stop": {
                 "episodes_total": args.num_episodes,
@@ -170,30 +134,31 @@ def main(args):
                 # === Environment ===
                 "env_config": {
                     "scenario_name": args.scenario,
+                    "discrete_action_input" : discrete_action_input
                 },
                 "num_envs_per_worker": args.num_envs_per_worker,
                 "horizon": args.max_episode_len,
 
                 # === Policy Config ===
                 # --- Model ---
-                "good_policy": args.good_policy,
-                "adv_policy": args.adv_policy,
-                "actor_hiddens": [args.num_units] * 2,
-                "actor_hidden_activation": "relu",
-                "critic_hiddens": [args.num_units] * 2,
-                "critic_hidden_activation": "relu",
+                #"good_policy": args.good_policy,
+                #"adv_policy": args.adv_policy,
+                #"actor_hiddens": [args.num_units] * 2,
+                #"actor_hidden_activation": "relu",
+                #"critic_hiddens": [args.num_units] * 2,
+                #"critic_hidden_activation": "relu",
                 "n_step": args.n_step,
                 "gamma": args.gamma,
 
                 # --- Exploration ---
-                "tau": 0.01,
+                #"tau": 0.01,
 
                 # --- Replay buffer ---
                 "buffer_size": args.replay_buffer,  # int(10000), # int(1e6)
 
                 # --- Optimization ---
-                "actor_lr": args.lr,
-                "critic_lr": args.lr,
+                #"actor_lr": args.lr,
+                #"critic_lr": args.lr,
                 "learning_starts": args.train_batch_size * args.max_episode_len,
                 "sample_batch_size": args.sample_batch_size,
                 "train_batch_size": args.train_batch_size,
@@ -211,7 +176,7 @@ def main(args):
                 },
             },
         },
-    }, verbose=0, reuse_actors=False) # reuse_actors=True - messes up the results
+    }, verbose=1, reuse_actors=False)  # reuse_actors=True - messes up the results
 
 
 if __name__ == '__main__':

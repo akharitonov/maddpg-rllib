@@ -13,6 +13,9 @@ import time
 class RLlibMultiAgentParticleEnv(rllib.MultiAgentEnv):
     """Wraps OpenAI Multi-Agent Particle env to be compatible with RLLib multi-agent."""
 
+    discrete_action_input_key = "discrete_action_input"
+    discrete_action_space_key = "discrete_action_space"
+
     def __init__(self, **mpe_args):
         """Create a new Multi-Agent Particle env compatible with RLlib.
 
@@ -21,12 +24,25 @@ class RLlibMultiAgentParticleEnv(rllib.MultiAgentEnv):
                 make_env.make_env instance.
 
         Examples:
-            >>> from rllib_env import RLlibMultiAgentParticleEnv
-            >>> env = RLlibMultiAgentParticleEnv(scenario_name="simple_reference")
-            >>> print(env.reset())
+        #    >>> from rllib_env import RLlibMultiAgentParticleEnv
+        #    >>> env = RLlibMultiAgentParticleEnv(scenario_name="simple_reference")
+        #    >>> print(env.reset())
         """
 
+        if self.discrete_action_input_key in mpe_args.keys():
+            discrete_action_input = mpe_args.pop(self.discrete_action_input_key)
+
+        if self.discrete_action_space_key in mpe_args.keys():
+            discrete_action_space = mpe_args.pop(self.discrete_action_space_key)
+
         self._env = make_env(**mpe_args)
+
+        if self.discrete_action_input_key in locals():
+            self._env.discrete_action_input = discrete_action_input
+
+        if self.discrete_action_space_key in locals():
+            self._env.discrete_action_space = discrete_action_space
+
         self.num_agents = self._env.n
         self.agent_ids = list(range(self.num_agents))
 

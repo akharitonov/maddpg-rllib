@@ -1,3 +1,9 @@
+# Comparison experiments for MADDPG, DQN, PPO
+
+***
+Fork of [wsjeon/maddpg-rllib](https://github.com/wsjeon/maddpg-rllib)
+***
+
 # Multi-Agent DDPG in Ray/RLlib
 
 ## Notes
@@ -16,4 +22,4 @@
     - [wsjeon/Multi-Agent Particle Environment](https://github.com/wsjeon/multiagent-particle-envs)
         - It includes the minor change for MPE to work with recent OpenAI Gym.
 
- 
+ ***
