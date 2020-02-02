@@ -1,3 +1,4 @@
+# Ignore local checkout of MPE if done
 MPE/
 ### PyCharm ###
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm, CLion, Android Studio and WebStorm
