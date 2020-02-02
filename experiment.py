@@ -44,7 +44,7 @@ def write_to_log_start(msg):
 
 
 def write_to_log_end(msg):
-    write_to_log(f'{datetime.now().strftime("%d/%m/%Y %H:%M:%S")} START: {msg}\n')
+    write_to_log(f'{datetime.now().strftime("%d/%m/%Y %H:%M:%S")} END: {msg}\n')
 
 
 def write_to_log_ts(msg, is_error: bool):
@@ -99,12 +99,13 @@ def upload(file_to_upload, folder, subfolder, name, overwrite=False):
             data, path, mode,
             client_modified=datetime(*time.gmtime(mtime)[:6]),
             mute=True)
+        print('uploaded as', res.name.encode('utf8'))
+        return res
     except ApiError as err:
         write_to_log_ts('Dropbox error: ' + err.error, True)
         return None
-
-    print('uploaded as', res.name.encode('utf8'))
-    return res
+    except Exception as gen_err:
+        write_to_log_ts('Dropbox general error: ' + gen_err.error, True)
 
 
 def upload_to_dropbox(run_result_folder, experiment_name):
@@ -157,18 +158,19 @@ def upload_to_dropbox(run_result_folder, experiment_name):
     upload(log_file, args.dbox_dir, '', "log.txt", True)
 
 
-
+"""
 # DQN
 dqn_results_folder = os.path.join(args.local_dir, "dqn/")
 for scenario in scenarios:  # Run with default parameters
-    c_folder = os.path.join(dqn_results_folder, "dqn_{}_default".format(scenario))
+    c_run_title = "dqn_{}_default".format(scenario)
+    c_folder = os.path.join(dqn_results_folder, c_run_title)
     for pfx in range(args.r):
         ivk_cmd = "python run_dqn.py --scenario={} --local-dir={} --add-postfix={} --temp-dir={}" \
             .format(scenario, c_folder, str(pfx), args.temp_dir)
         if execute_command(ivk_cmd):
-            upload_to_dropbox(c_folder, 'dqn/{}_{}'.format(scenario, pfx))
+            upload_to_dropbox(c_folder, 'dqn/{}_{}'.format(c_run_title, pfx))
 
-
+"""
 # MADDPG
 maddpg_results_folder = os.path.join(args.local_dir, "maddpg/")
 
@@ -176,51 +178,56 @@ maddpg_results_folder = os.path.join(args.local_dir, "maddpg/")
 var_replay_buffer_variations = [1000000, 100000, 10000]  # first one is the default value
 for scenario in scenarios:
     for rb_var in var_replay_buffer_variations:
-        c_folder = os.path.join(maddpg_results_folder, "maddpg_{}_rb_{}".format(scenario, rb_var))
+        c_run_title = "maddpg_{}_rb_{}".format(scenario, rb_var)
+        c_folder = os.path.join(maddpg_results_folder, c_run_title)
         for pfx in range(args.r):
-            ivk_cmd = "python run_maddpg.py --scenario={} --replay-buffer={} --local-dir={} --add-postfix={} --temp-dir={}" \
-                .format(scenario, rb_var, c_folder, str(pfx), args.temp_dir)
+            ivk_cmd = "python run_maddpg.py --scenario={} --replay-buffer={} --local-dir={} --add-postfix={} " \
+                      "--temp-dir={}".format(scenario, rb_var, c_folder, str(pfx), args.temp_dir)
             if execute_command(ivk_cmd):
-                upload_to_dropbox(c_folder, 'maddpg/{}_{}'.format(scenario, pfx))
+                upload_to_dropbox(c_folder, 'maddpg/{}_{}'.format(c_run_title, pfx))
 
 # Standard experiments with varying numbers of steps
 var_steps_variations = [5, 10, 15]
 for scenario in scenarios:
     for n_steps in var_steps_variations:
-        c_folder = os.path.join(maddpg_results_folder, "maddpg_{0}_n_steps_{1}".format(scenario, n_steps))
+        c_run_title = "maddpg_{0}_n_steps_{1}".format(scenario, n_steps)
+        c_folder = os.path.join(maddpg_results_folder, c_run_title)
         for pfx in range(args.r):
             ivk_cmd = "python run_maddpg.py --scenario={} --n-step={} --local-dir={} --add-postfix={} --temp-dir={}" \
                 .format(scenario, n_steps, c_folder, str(pfx), args.temp_dir)
             if execute_command(ivk_cmd):
-                upload_to_dropbox(c_folder, 'maddpg/{}_{}'.format(scenario, pfx))
+                upload_to_dropbox(c_folder, 'maddpg/{}_{}'.format(c_run_title, pfx))
 
 # Standard experiments with varying learning rate
 var_lr_variations = [1e-1, 1e-2, 1, 1e+1, 1e+2]
 for scenario in scenarios:
     for lr_var in var_lr_variations:
-        c_folder = os.path.join(maddpg_results_folder, "maddpg_{0}_lr_{1:1.2e}".format(scenario, lr_var))
+        c_run_title = "maddpg_{0}_lr_{1:1.2e}".format(scenario, lr_var)
+        c_folder = os.path.join(maddpg_results_folder, c_run_title)
         for pfx in range(args.r):
             ivk_cmd = "python run_maddpg.py --scenario={} --lr={} --local-dir={} --add-postfix={} --temp-dir={}" \
                 .format(scenario, lr_var, c_folder, str(pfx), args.temp_dir)
             if execute_command(ivk_cmd):
-                upload_to_dropbox(c_folder, 'maddpg/{}_{}'.format(scenario, pfx))
+                upload_to_dropbox(c_folder, 'maddpg/{}_{}'.format(c_run_title, pfx))
 
 # Varying policy
 for scenario in scenarios:
     for pfx in range(args.r):
         # Good: DDPG
-        c_folder = os.path.join(maddpg_results_folder, "maddpg_{}_policy_good_ddpg".format(scenario))
+        c_run_title_g = "maddpg_{}_policy_good_ddpg".format(scenario)
+        c_folder = os.path.join(maddpg_results_folder, c_run_title_g)
         ivk_cmd = "python run_maddpg.py --scenario={} --good-policy={} --local-dir={} --add-postfix={} --temp-dir={}" \
             .format(scenario, "ddpg", c_folder, str(pfx), args.temp_dir)
         if execute_command(ivk_cmd):
-            upload_to_dropbox(c_folder, 'maddpg/{}_{}'.format(scenario, pfx))
+            upload_to_dropbox(c_folder, 'maddpg/{}_{}'.format(c_run_title_g, pfx))
 
         # Adv: DDPG
-        c_folder = os.path.join(maddpg_results_folder, "maddpg_{}_policy_adv_ddpg".format(scenario))
+        c_run_title_a = "maddpg_{}_policy_adv_ddpg".format(scenario)
+        c_folder = os.path.join(maddpg_results_folder, c_run_title_a)
         ivk_cmd = "python run_maddpg.py --scenario={} --adv-policy={} --local-dir={} --add-postfix={} --temp-dir={}" \
             .format(scenario, "ddpg", c_folder, str(pfx), args.temp_dir)
         if execute_command(ivk_cmd):
-            upload_to_dropbox(c_folder, 'maddpg/{}_{}'.format(scenario, pfx))
+            upload_to_dropbox(c_folder, 'maddpg/{}_{}'.format(c_run_title_a, pfx))
 
 # PPO
 """
