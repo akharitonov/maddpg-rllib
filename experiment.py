@@ -158,7 +158,7 @@ def upload_to_dropbox(run_result_folder, experiment_name):
     upload(log_file, args.dbox_dir, '', "log.txt", True)
 
 
-"""
+
 # DQN
 dqn_results_folder = os.path.join(args.local_dir, "dqn/")
 for scenario in scenarios:  # Run with default parameters
@@ -170,7 +170,7 @@ for scenario in scenarios:  # Run with default parameters
         if execute_command(ivk_cmd):
             upload_to_dropbox(c_folder, 'dqn/{}_{}'.format(c_run_title, pfx))
 
-"""
+
 # MADDPG
 maddpg_results_folder = os.path.join(args.local_dir, "maddpg/")
 
