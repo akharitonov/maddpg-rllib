@@ -1,5 +1,5 @@
 import argparse
-import os
+import os, sys
 import time
 import traceback
 from datetime import datetime
@@ -100,14 +100,7 @@ def upload(file_to_upload, folder, subfolder, name, overwrite=False):
             client_modified=datetime(*time.gmtime(mtime)[:6]),
             mute=True)
     except ApiError as err:
-        if err.error.is_shared_link_already_exists():
-            write_to_log_ts("Dropbox link already exists.")
-        if err.error.is_path() and err.error.get_path().is_not_found():
-            write_to_log_ts("Dropbox file not found.")
-        elif err.error.is_settings_error():
-            write_to_log_ts(err.error.get_settings_error())
-        else:
-            write_to_log_ts('Dropbox error: ' + err.error, True)
+        write_to_log_ts('Dropbox error: ' + err.error, True)
         return None
 
     print('uploaded as', res.name.encode('utf8'))

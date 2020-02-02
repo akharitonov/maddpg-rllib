@@ -1,5 +1,32 @@
 # Comparison experiments for MADDPG, DQN, PPO
 
+
+## Running in docker (Tensorflow images)
+
+Build image for CPU based Tensorflow:
+```
+sudo docker build -t maddpg-rllib:latest -f cpu.Dockerfile .
+```
+Or GPU
+```
+sudo docker build -t maddpg-rllib:latest -f gpu.Dockerfile .
+```
+
+Optionally cleanup if a container was created before
+```
+sudo docker stop maddpgrllib-test
+sudo docker rm maddpgrllib-test
+```
+Start the container (Replace `YOUR_TOKEN` with your Dropbox token):
+```
+sudo docker run -e dboxtoken=YOUR_TOKEN -e dboxdir=/epxeriment_1 --name maddpgrllib-test --shm-size=4gb maddpg-rllib:latest
+```
+
+`-e dboxdir=/epxeriment_1` points to the destination directory inside of the Dropbox account, you might want to adjust it.
+
+If you want the results to be uploaded to Dropbox, you'll need to setup an app in your account [App console](https://www.dropbox.com/developers/apps) in order to get a token.
+
+
 ***
 Fork of [wsjeon/maddpg-rllib](https://github.com/wsjeon/maddpg-rllib)
 ***
