@@ -1,4 +1,5 @@
 import ray
+from ray import utils
 from ray.tune import run_experiments
 from ray.tune.registry import register_env
 from env import MultiAgentParticleEnv
@@ -73,7 +74,7 @@ def main(args):
     ray.init(redis_max_memory=int(ray.utils.get_system_memory() * 0.4),
              memory=int(ray.utils.get_system_memory() * 0.2),
              object_store_memory=int(ray.utils.get_system_memory() * 0.2),
-             num_gpus=1,
+             num_gpus=args.num_gpus,
              num_cpus=6,
              temp_dir=args.temp_dir)
 
@@ -108,7 +109,7 @@ def main(args):
             }
         )
 
-    policies = {"policy_%d" %i: gen_policy(i) for i in range(len(env.observation_space_dict))}
+    policies = {"policy_%d" % i: gen_policy(i) for i in range(len(env.observation_space_dict))}
     policy_ids = list(policies.keys())
 
     def policy_mapping_fn(agent_id):
@@ -134,31 +135,31 @@ def main(args):
                 # === Environment ===
                 "env_config": {
                     "scenario_name": args.scenario,
-                    "discrete_action_input" : discrete_action_input
+                    "discrete_action_input": discrete_action_input
                 },
                 "num_envs_per_worker": args.num_envs_per_worker,
                 "horizon": args.max_episode_len,
 
                 # === Policy Config ===
                 # --- Model ---
-                #"good_policy": args.good_policy,
-                #"adv_policy": args.adv_policy,
-                #"actor_hiddens": [args.num_units] * 2,
-                #"actor_hidden_activation": "relu",
-                #"critic_hiddens": [args.num_units] * 2,
-                #"critic_hidden_activation": "relu",
+                # "good_policy": args.good_policy,
+                # "adv_policy": args.adv_policy,
+                # "actor_hiddens": [args.num_units] * 2,
+                # "actor_hidden_activation": "relu",
+                # "critic_hiddens": [args.num_units] * 2,
+                # "critic_hidden_activation": "relu",
                 "n_step": args.n_step,
                 "gamma": args.gamma,
 
                 # --- Exploration ---
-                #"tau": 0.01,
+                # "tau": 0.01,
 
                 # --- Replay buffer ---
                 "buffer_size": args.replay_buffer,  # int(10000), # int(1e6)
 
                 # --- Optimization ---
-                #"actor_lr": args.lr,
-                #"critic_lr": args.lr,
+                # "actor_lr": args.lr,
+                # "critic_lr": args.lr,
                 "learning_starts": args.train_batch_size * args.max_episode_len,
                 "sample_batch_size": args.sample_batch_size,
                 "train_batch_size": args.train_batch_size,
@@ -176,7 +177,7 @@ def main(args):
                 },
             },
         },
-    }, verbose=1, reuse_actors=False)  # reuse_actors=True - messes up the results
+    }, verbose=0, reuse_actors=False)  # reuse_actors=True - messes up the results
 
 
 if __name__ == '__main__':

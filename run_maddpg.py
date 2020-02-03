@@ -1,4 +1,5 @@
 import ray
+from ray import utils
 from ray.tune import run_experiments
 from ray.tune.registry import register_trainable, register_env
 from ray.rllib.contrib.maddpg.maddpg import MADDPGTrainer
@@ -110,7 +111,7 @@ def main(args):
              memory=int(ray.utils.get_system_memory() * 0.2),
              object_store_memory=int(ray.utils.get_system_memory() * 0.2),
             # huge_pages=False,
-             num_gpus=1,
+             num_gpus=args.num_gpus,
              num_cpus=6,
              temp_dir=args.temp_dir)
 

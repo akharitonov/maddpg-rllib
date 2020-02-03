@@ -38,6 +38,7 @@ log_file = os.path.join(args.local_dir, "_log.txt")
 def write_to_log(msg):
     with open(log_file, 'a') as fd:
         fd.write(msg)
+    upload_log_to_dropbox()
 
 
 def write_to_log_start(msg):
@@ -86,7 +87,7 @@ if args.dbox_token is not None:
 
 def upload(file_to_upload, folder, subfolder, name, overwrite=False):
     # https://github.com/dropbox/dropbox-sdk-python/blob/master/example/updown.py
-    path = '/%s/%s/%s' % (folder,  subfolder.replace(os.path.sep, '/'), name)
+    path = '/%s/%s/%s' % (folder, subfolder.replace(os.path.sep, '/'), name)
     while '//' in path:
         path = path.replace('//', '/')
 
@@ -108,6 +109,13 @@ def upload(file_to_upload, folder, subfolder, name, overwrite=False):
         return None
     except Exception:
         write_to_log_ts('Dropbox general error: ' + traceback.format_exc(), True)
+
+
+def upload_log_to_dropbox():
+    if dbx is None:
+        return
+    # Upload log file
+    upload(log_file, args.dbox_dir, '', "log.txt", True)
 
 
 def upload_to_dropbox(run_result_folder, experiment_name):
@@ -143,22 +151,20 @@ def upload_to_dropbox(run_result_folder, experiment_name):
                 upload(full_f_result, args.dbox_dir, experiment_name, f_result)
             else:
                 write_to_log_ts('File not found: ' + full_f_result, False)
-
-            # mark dir as uploaded
-            with open(uploaded_marker_file, 'w') as f:
-                f.write(datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
-            # Cleanup the results folder, leave only files that are actually relevant
-            # remove irrelevant files
-            for name in files:
-                if name not in relevant_files:
-                    os.remove(os.path.join(root, name))
-            # remove folders
-            for name in dirs:
-                os.rmdir(os.path.join(root, name))
-
-    # Upload log file
-    upload(log_file, args.dbox_dir, '', "log.txt", True)
-
+            try:
+                # mark dir as uploaded
+                with open(uploaded_marker_file, 'w') as f:
+                    f.write(datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
+                # Cleanup the results folder, leave only files that are actually relevant
+                # remove irrelevant files
+                for name in files:
+                    if name not in relevant_files:
+                        os.remove(os.path.join(root, name))
+                # remove folders
+                for name in dirs:
+                    os.rmdir(os.path.join(root, name))
+            except Exception as err:
+                write_to_log_ts(traceback.format_exc(), True)
 
 
 # DQN
@@ -172,7 +178,6 @@ for scenario in scenarios:  # Run with default parameters
         if execute_command(ivk_cmd):
             upload_to_dropbox(c_folder, 'dqn/{}_{}'.format(c_run_title, pfx))
 
-
 # MADDPG
 maddpg_results_folder = os.path.join(args.local_dir, "maddpg/")
 
@@ -183,8 +188,9 @@ for scenario in scenarios:
         c_run_title = "maddpg_{}_rb_{}".format(scenario, rb_var)
         c_folder = os.path.join(maddpg_results_folder, c_run_title)
         for pfx in range(args.r):
-            ivk_cmd = "python run_maddpg.py --scenario={} --replay-buffer={} --local-dir={} --add-postfix={} --num-gpus={}" \
-                      "--temp-dir={}".format(scenario, rb_var, c_folder, str(pfx), args.temp_dir, args.num_gpus)
+            ivk_cmd = "python run_maddpg.py --scenario={} --replay-buffer={} --local-dir={} --add-postfix={} " \
+                      "--num-gpus={} --temp-dir={}"\
+                .format(scenario, rb_var, c_folder, str(pfx), args.temp_dir, args.num_gpus)
             if execute_command(ivk_cmd):
                 upload_to_dropbox(c_folder, 'maddpg/{}_{}'.format(c_run_title, pfx))
 
@@ -195,7 +201,8 @@ for scenario in scenarios:
         c_run_title = "maddpg_{0}_n_steps_{1}".format(scenario, n_steps)
         c_folder = os.path.join(maddpg_results_folder, c_run_title)
         for pfx in range(args.r):
-            ivk_cmd = "python run_maddpg.py --scenario={} --n-step={} --local-dir={} --add-postfix={} --temp-dir={} --num-gpus={}" \
+            ivk_cmd = "python run_maddpg.py --scenario={} --n-step={} --local-dir={} --add-postfix={} --temp-dir={} " \
+                      "--num-gpus={}" \
                 .format(scenario, n_steps, c_folder, str(pfx), args.temp_dir, args.num_gpus)
             if execute_command(ivk_cmd):
                 upload_to_dropbox(c_folder, 'maddpg/{}_{}'.format(c_run_title, pfx))
@@ -207,7 +214,8 @@ for scenario in scenarios:
         c_run_title = "maddpg_{0}_lr_{1:1.2e}".format(scenario, lr_var)
         c_folder = os.path.join(maddpg_results_folder, c_run_title)
         for pfx in range(args.r):
-            ivk_cmd = "python run_maddpg.py --scenario={} --lr={} --local-dir={} --add-postfix={} --temp-dir={} --num-gpus={}" \
+            ivk_cmd = "python run_maddpg.py --scenario={} --lr={} --local-dir={} --add-postfix={} --temp-dir={} " \
+                      "--num-gpus={}" \
                 .format(scenario, lr_var, c_folder, str(pfx), args.temp_dir, args.num_gpus)
             if execute_command(ivk_cmd):
                 upload_to_dropbox(c_folder, 'maddpg/{}_{}'.format(c_run_title, pfx))
@@ -218,7 +226,8 @@ for scenario in scenarios:
         # Good: DDPG
         c_run_title_g = "maddpg_{}_policy_good_ddpg".format(scenario)
         c_folder = os.path.join(maddpg_results_folder, c_run_title_g)
-        ivk_cmd = "python run_maddpg.py --scenario={} --good-policy={} --local-dir={} --add-postfix={} --temp-dir={} --num-gpus={}" \
+        ivk_cmd = "python run_maddpg.py --scenario={} --good-policy={} --local-dir={} --add-postfix={} --temp-dir={} " \
+                  "--num-gpus={}" \
             .format(scenario, "ddpg", c_folder, str(pfx), args.temp_dir, args.num_gpus)
         if execute_command(ivk_cmd):
             upload_to_dropbox(c_folder, 'maddpg/{}_{}'.format(c_run_title_g, pfx))
@@ -226,7 +235,8 @@ for scenario in scenarios:
         # Adv: DDPG
         c_run_title_a = "maddpg_{}_policy_adv_ddpg".format(scenario)
         c_folder = os.path.join(maddpg_results_folder, c_run_title_a)
-        ivk_cmd = "python run_maddpg.py --scenario={} --adv-policy={} --local-dir={} --add-postfix={} --temp-dir={} --num-gpus={}" \
+        ivk_cmd = "python run_maddpg.py --scenario={} --adv-policy={} --local-dir={} --add-postfix={} --temp-dir={} " \
+                  "--num-gpus={}" \
             .format(scenario, "ddpg", c_folder, str(pfx), args.temp_dir, args.num_gpus)
         if execute_command(ivk_cmd):
             upload_to_dropbox(c_folder, 'maddpg/{}_{}'.format(c_run_title_a, pfx))
