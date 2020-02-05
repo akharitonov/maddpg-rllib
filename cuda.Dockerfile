@@ -1,4 +1,4 @@
-FROM nvidia/cuda:9.2-base-ubuntu18.04
+FROM nvidia/cuda:9.0-base-ubuntu16.04
 # https://gitlab.com/nvidia/container-images/cuda/blob/master/doc/supported-tags.md
 SHELL ["/bin/bash", "-c"]
 
