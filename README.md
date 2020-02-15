@@ -17,21 +17,25 @@ Optionally cleanup if a container was created before
 docker stop maddpg-rllib
 docker rm maddpg-rllib
 ```
-Start the container (Replace `YOUR_TOKEN` with your Dropbox token):
+Start the container.
+Environment parameters:
+* `repeats` - number of experiment repetitions
+* `dboxtoken` - (optional) your Dropbox token
+* `dboxdir` - directory in the Dropbox where the results will be uploaded. Must be empty or non existent. **Should only be defined when `dboxtoken` us supplied**
+
+If you don't want to use Dropbox auto upload, just omit `-e dboxtoken=...` and `-e dboxdir=...` flags. Results will be stored in `maddpg-rllib-vres` Docker volume.
+
 ```
 docker run \
  -e dboxtoken=YOUR_TOKEN \
  -e dboxdir=/epxeriment_1 \
+ -e repeats=5 \
  --name maddpg-rllib \
  -v maddpg-rllib-vtmp:/ray_temp \
  -v maddpg-rllib-vres:/ray_results \
  --shm-size=4gb \
  maddpg-rllib:latest
 ```
-
-If you don't want to use Dropbox auto upload, just omit `-e dboxtoken=...` and `-e dboxdir=...` flags. Results will be stored in `maddpg-rllib-vres` Docker volume.
-
-`-e dboxdir=/epxeriment_1` points to the destination directory inside of the Dropbox account, you might want to adjust it.
 
 After the container experiments finish, the container quits. If you didn't supply a valid Dropbox token, you'll need to get the results from the mounted volume. You can access a volume with a *dummy* container attacched to that volume. Example using [Docker `cp`](https://docs.docker.com/engine/reference/commandline/cp/):
 ```
