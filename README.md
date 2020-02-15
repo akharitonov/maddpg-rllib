@@ -68,6 +68,7 @@ As in the case with Tensorflow images, omit `-e dboxtoken=...` and `-e dboxdir=.
 ```
 docker run \
  --gpus all \
+ -e repeats=5 \
  -e dboxtoken=YOUR_TOKEN \
  -e dboxdir=/epxeriment_1 \
  --name maddpg-rllib-cuda \
@@ -75,6 +76,12 @@ docker run \
  -v maddpg-rllib-vtmp:/ray_temp \
  -v maddpg-rllib-vres:/ray_results \
  maddpg-rllib-cuda:latest
+```
+
+Cleanup
+```
+docker stop maddpg-rllib-cuda
+docker rm maddpg-rllib-cuda
 ```
 
 
