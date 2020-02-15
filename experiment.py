@@ -15,10 +15,10 @@ Script running a series of MPE RL experiments, optionally uploading results to D
 parser = argparse.ArgumentParser(description='Experiments runner.')
 parser.add_argument("--temp-dir", type=str, default="/ray_temp", help="storage for temporary ray files")
 parser.add_argument("--local-dir", type=str, default="./ray_results", help="path to save checkpoints")
-parser.add_argument("--r", type=int, default=10, help="number of repetitions per experiment")
-parser.add_argument("--dbox-token", type=str, default=None,  # https://www.dropbox.com/developers/documentation/python
+parser.add_argument("-r", "--repeat", type=int, default=10, help="number of repetitions per experiment")
+parser.add_argument("--dbox-token", type=str, default=None, required=False,  # https://www.dropbox.com/developers/documentation/python
                     help="App token for Dropbox where results should be uploaded")
-parser.add_argument("--dbox-dir", type=str, default='/experiment',
+parser.add_argument("--dbox-dir", type=str, default='/experiment', required=False,
                     help="Dropbox folder where results should be uploaded")
 parser.add_argument("--num-gpus", type=int, default=0)
 parser.add_argument("--checkpoint-freq", type=int, default=75000,
@@ -121,8 +121,10 @@ def upload_log_to_dropbox():
 
 
 def upload_to_dropbox(run_result_folder, experiment_name):
+    cleanup_only = False
     if dbx is None:
-        return
+        cleanup_only = True
+    
     # Upload relevant experiment files
     f_params = 'params.json'
     f_progress = 'progress.csv'
@@ -130,7 +132,7 @@ def upload_to_dropbox(run_result_folder, experiment_name):
     relevant_files = [f_params, f_progress, f_result]
 
     for root, dirs, files in os.walk(run_result_folder):
-        uploaded_marker_file = os.path.join(root, 'uploaded_dbox.txt')
+        uploaded_marker_file = os.path.join(root, '__processed_results_flag.txt')
         if os.path.isfile(uploaded_marker_file):
             continue  # this directory was already uploaded
 
@@ -138,21 +140,22 @@ def upload_to_dropbox(run_result_folder, experiment_name):
             full_f_params = os.path.join(root, f_params)
             full_f_progress = os.path.join(root, f_progress)
             full_f_result = os.path.join(root, f_result)
+            if not cleanup_only:
+                # If Dropbox upload is active for this run upload relevant files
+                if os.path.isfile(full_f_params):
+                    upload(full_f_params, args.dbox_dir, experiment_name, f_params)
+                else:
+                    write_to_log_ts('File not found: ' + full_f_params, False)
 
-            if os.path.isfile(full_f_params):
-                upload(full_f_params, args.dbox_dir, experiment_name, f_params)
-            else:
-                write_to_log_ts('File not found: ' + full_f_params, False)
+                if os.path.isfile(full_f_progress):
+                    upload(full_f_progress, args.dbox_dir, experiment_name, f_progress)
+                else:
+                    write_to_log_ts('File not found: ' + full_f_progress, False)
 
-            if os.path.isfile(full_f_progress):
-                upload(full_f_progress, args.dbox_dir, experiment_name, f_progress)
-            else:
-                write_to_log_ts('File not found: ' + full_f_progress, False)
-
-            if os.path.isfile(full_f_result):
-                upload(full_f_result, args.dbox_dir, experiment_name, f_result)
-            else:
-                write_to_log_ts('File not found: ' + full_f_result, False)
+                if os.path.isfile(full_f_result):
+                    upload(full_f_result, args.dbox_dir, experiment_name, f_result)
+                else:
+                    write_to_log_ts('File not found: ' + full_f_result, False)
             try:
                 # mark dir as uploaded
                 with open(uploaded_marker_file, 'w') as f:
@@ -166,6 +169,7 @@ def upload_to_dropbox(run_result_folder, experiment_name):
                 for name in dirs:
                     os.rmdir(os.path.join(root, name))
             except Exception as err:
+                print(err)
                 write_to_log_ts(traceback.format_exc(), True)
 
 
@@ -174,7 +178,7 @@ dqn_results_folder = os.path.join(args.local_dir, "dqn/")
 for scenario in scenarios:  # Run with default parameters
     c_run_title = "dqn_{}_default".format(scenario)
     c_folder = os.path.join(dqn_results_folder, c_run_title)
-    for pfx in range(args.r):
+    for pfx in range(args.repeat):
         ivk_cmd = "python run_dqn.py --scenario={} --local-dir={} --add-postfix={} --temp-dir={} --num-gpus={} " \
                   "--checkpoint-freq={}" \
             .format(scenario, c_folder, str(pfx), args.temp_dir, args.num_gpus, args.checkpoint_freq)
@@ -190,7 +194,7 @@ for scenario in scenarios:
     for rb_var in var_replay_buffer_variations:
         c_run_title = "maddpg_{}_rb_{}".format(scenario, rb_var)
         c_folder = os.path.join(maddpg_results_folder, c_run_title)
-        for pfx in range(args.r):
+        for pfx in range(args.repeat):
             ivk_cmd = "python run_maddpg.py --scenario={} --replay-buffer={} --local-dir={} --add-postfix={} " \
                       "--temp-dir={} --num-gpus={} --checkpoint-freq={}" \
                 .format(scenario, rb_var, c_folder, str(pfx), args.temp_dir, args.num_gpus, args.checkpoint_freq)
@@ -203,7 +207,7 @@ for scenario in scenarios:
     for n_steps in var_steps_variations:
         c_run_title = "maddpg_{0}_n_steps_{1}".format(scenario, n_steps)
         c_folder = os.path.join(maddpg_results_folder, c_run_title)
-        for pfx in range(args.r):
+        for pfx in range(args.repeat):
             ivk_cmd = "python run_maddpg.py --scenario={} --n-step={} --local-dir={} --add-postfix={} --temp-dir={} " \
                       "--num-gpus={} --checkpoint-freq={}" \
                 .format(scenario, n_steps, c_folder, str(pfx), args.temp_dir, args.num_gpus, args.checkpoint_freq)
@@ -216,7 +220,7 @@ for scenario in scenarios:
     for lr_var in var_lr_variations:
         c_run_title = "maddpg_{0}_lr_{1:1.2e}".format(scenario, lr_var)
         c_folder = os.path.join(maddpg_results_folder, c_run_title)
-        for pfx in range(args.r):
+        for pfx in range(args.repeat):
             ivk_cmd = "python run_maddpg.py --scenario={} --lr={} --local-dir={} --add-postfix={} --temp-dir={} " \
                       "--num-gpus={} --checkpoint-freq={}" \
                 .format(scenario, lr_var, c_folder, str(pfx), args.temp_dir, args.num_gpus, args.checkpoint_freq)
@@ -225,7 +229,7 @@ for scenario in scenarios:
 
 # Varying policy
 for scenario in scenarios:
-    for pfx in range(args.r):
+    for pfx in range(args.repeat):
         # Good: DDPG
         c_run_title_g = "maddpg_{}_policy_good_ddpg".format(scenario)
         c_folder = os.path.join(maddpg_results_folder, c_run_title_g)
@@ -249,7 +253,7 @@ for scenario in scenarios:
 ppo_results_folder = os.path.join(args.local_dir, "ppo/")
 for scenario in scenarios:  # Run with default parameters
     c_folder = os.path.join(ppo_results_folder, "ppo_{}_default".format(scenario))
-    for pfx in range(args.r):
+    for pfx in range(args.repeat):
         ivk_cmd = "python run_ppo.py --scenario={} --local-dir={} --add-postfix={} --temp-dir={} --num-gpus={} --checkpoint-freq={}" \
             .format(scenario, c_folder, str(pfx), args.temp_dir, args.num_gpus, args.checkpoint_freq)
         if execute_command(ivk_cmd):

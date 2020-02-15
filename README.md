@@ -5,24 +5,47 @@
 
 Build image for CPU based Tensorflow:
 ```
-sudo docker build -t maddpg-rllib:latest -f cpu.Dockerfile .
+docker build -t maddpg-rllib:latest -f cpu.Dockerfile .
 ```
 Or GPU
 ```
-sudo docker build -t maddpg-rllib:latest -f gpu.Dockerfile .
+docker build -t maddpg-rllib:latest -f gpu.Dockerfile .
 ```
 
 Optionally cleanup if a container was created before
 ```
-sudo docker stop maddpgrllib-test
-sudo docker rm maddpgrllib-test
+docker stop maddpg-rllib
+docker rm maddpg-rllib
 ```
 Start the container (Replace `YOUR_TOKEN` with your Dropbox token):
 ```
-sudo docker run -e dboxtoken=YOUR_TOKEN -e dboxdir=/epxeriment_1 --name maddpgrllib-test --shm-size=4gb maddpg-rllib:latest
+docker run \
+ -e dboxtoken=YOUR_TOKEN \
+ -e dboxdir=/epxeriment_1 \
+ --name maddpg-rllib \
+ -v maddpg-rllib-vtmp:/ray_temp \
+ -v maddpg-rllib-vres:/ray_results \
+ --shm-size=4gb \
+ maddpg-rllib:latest
 ```
 
+If you don't want to use Dropbox auto upload, just omit `-e dboxtoken=...` and `-e dboxdir=...` flags. Results will be stored in `maddpg-rllib-vres` Docker volume.
+
 `-e dboxdir=/epxeriment_1` points to the destination directory inside of the Dropbox account, you might want to adjust it.
+
+After the container experiments finish, the container quits. If you didn't supply a valid Dropbox token, you'll need to get the results from the mounted volume. You can access a volume with a *dummy* container attacched to that volume. Example using [Docker `cp`](https://docs.docker.com/engine/reference/commandline/cp/):
+```
+docker container create --name maddpg-rllib-dummy \
+    -v maddpg-rllib-vtmp:/ray_temp \ 
+    -v maddpg-rllib-vres:/ray_results \ 
+    hello-world
+
+mkdir -p ./ray_results  
+
+docker cp maddpg-rllib-dummy:/ray_results ./ray_results
+
+docker rm maddpg-rllib-dummy
+```
 
 If you want the results to be uploaded to Dropbox, you'll need to setup an app in your account [App console](https://www.dropbox.com/developers/apps) in order to get a token.
 
@@ -33,13 +56,22 @@ If you want the results to be uploaded to Dropbox, you'll need to setup an app i
 [Local installation instructions](./INSTALL_CUDA.md)
 
 ```
-sudo docker build -t maddpg-rllib-cuda:latest -f cuda.Dockerfile .
+docker build -t maddpg-rllib-cuda:latest -f cuda.Dockerfile .
 ```
 
-```
-sudo docker run  --gpus all -e dboxtoken=YOUR_TOKEN -e dboxdir=/epxeriment_1 --name maddpgrllib-test-cuda --shm-size=4gb maddpg-rllib-cuda:latest
-```
+As in the case with Tensorflow images, omit `-e dboxtoken=...` and `-e dboxdir=...` flags if you don't want to upload results to your Dropbox and want them to be store locally
 
+```
+docker run \
+ --gpus all \
+ -e dboxtoken=YOUR_TOKEN \
+ -e dboxdir=/epxeriment_1 \
+ --name maddpg-rllib-cuda \
+ --shm-size=4gb \
+ -v maddpg-rllib-vtmp:/ray_temp \
+ -v maddpg-rllib-vres:/ray_results \
+ maddpg-rllib-cuda:latest
+```
 
 
 ***

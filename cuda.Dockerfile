@@ -50,6 +50,8 @@ RUN bash ./scripts/create_conda_env.sh
 RUN chmod 777 ./scripts/execute_in_conda.sh
 RUN find ${CONDA_PATH} -type d -exec chmod 777 {} \;
 
+VOLUME ["/ray_temp", "/ray_results"]
+
 # Run experiments
-ENTRYPOINT /code/scripts/execute_in_conda.sh ${dboxtoken} ${dboxdir}
+ENTRYPOINT /code/scripts/execute_in_conda.sh 1 ${dboxtoken} ${dboxdir}
 

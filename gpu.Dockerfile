@@ -35,5 +35,9 @@ RUN mkdir -p /ray_temp
 # Results directory
 RUN mkdir -p /ray_results
 
+VOLUME ["/ray_temp", "/ray_results"]
+
+RUN chmod 777 ./scripts/execute.sh
+
 # Run experiments
-ENTRYPOINT python experiment.py --temp-dir /ray_temp --local-dir /ray_results --r 10 --dbox-token ${dboxtoken} --dbox-dir ${dboxdir} --num-gpus 1
+ENTRYPOINT /code/scripts/execute.sh 1 ${dboxtoken} ${dboxdir}
