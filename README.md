@@ -21,7 +21,7 @@ Start the container.
 Environment parameters:
 * `repeats` - number of experiment repetitions
 * `dboxtoken` - (optional) your Dropbox token
-* `dboxdir` - directory in the Dropbox where the results will be uploaded. Must be empty or non existent. **Should only be defined when `dboxtoken` us supplied**
+* `dboxdir` - directory in the Dropbox where the results will be uploaded. Must be empty or non existent. **Should only be defined when `dboxtoken` is supplied**
 
 If you don't want to use Dropbox auto upload, just omit `-e dboxtoken=...` and `-e dboxdir=...` flags. Results will be stored in `maddpg-rllib-vres` Docker volume.
 
@@ -63,7 +63,7 @@ If you want the results to be uploaded to Dropbox, you'll need to setup an app i
 docker build -t maddpg-rllib-cuda:latest -f cuda.Dockerfile .
 ```
 
-As in the case with Tensorflow images, omit `-e dboxtoken=...` and `-e dboxdir=...` flags if you don't want to upload results to your Dropbox and want them to be store locally
+As in the case with Tensorflow images, omit `-e dboxtoken=...` and `-e dboxdir=...` flags if you don't want to upload results to your Dropbox and want them to be store locally.
 
 ```
 docker run \
