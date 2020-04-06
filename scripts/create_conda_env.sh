@@ -12,7 +12,7 @@ pip install --progress-bar off tabulate==0.8.6
 pip install --progress-bar off -U https://s3-us-west-2.amazonaws.com/ray-wheels/latest/ray-0.8.0.dev3-cp36-cp36m-manylinux1_x86_64.whl
 pip install --progress-bar off requests
 
-git clone https://github.com/jcridev/multiagent-particle-envs.git /code/MPE
+git clone https://github.com/akharitonov/multiagent-particle-envs.git /code/MPE
 
 cd /code/MPE
 pip install --progress-bar off -e .

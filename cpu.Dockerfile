@@ -14,7 +14,7 @@ RUN mkdir p /code
 WORKDIR /code
 ADD . .
 # Multi-agent particle environments (fork of the original, minimal compatibility fixes)
-RUN git clone https://github.com/jcridev/multiagent-particle-envs.git ./MPE
+RUN git clone https://github.com/akharitonov/multiagent-particle-envs.git ./MPE
 WORKDIR ./MPE
 RUN pip install --progress-bar off -e .
 WORKDIR /code
