@@ -6,7 +6,7 @@ PFX=${1:-""}
 
 for i in {1..5}
 do
-   docker rm -v ${PFX}maddpg-rllib_$i
+   docker container rm -v ${PFX}maddpg-rllib_$i
 done
 
 docker image rm ${PFX}maddpg-rllib:latest
