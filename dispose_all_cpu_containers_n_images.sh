@@ -4,9 +4,11 @@
 PFX=${1:-""}
 
 
-for i in {1..5}
+max=5
+for i in $(seq 0 $max)
 do
-   docker container rm -v ${PFX}maddpg-rllib_$i
+    docker container rm -v ${PFX}maddpg-rllib_$i
 done
+
 
 docker image rm ${PFX}maddpg-rllib:latest

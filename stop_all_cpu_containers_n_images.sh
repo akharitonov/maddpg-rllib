@@ -3,8 +3,8 @@
 # Prefix for container names
 PFX=${1:-""}
 
-
-for i in {1..5}
+max=5
+for i in $(seq 0 $max)
 do
-   docker container stop ${PFX}maddpg-rllib_$i
+    docker container stop ${PFX}maddpg-rllib_$i
 done
