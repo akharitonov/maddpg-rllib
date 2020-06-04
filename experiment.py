@@ -13,16 +13,33 @@ Script running a series of MPE RL experiments, optionally uploading results to D
 """
 
 parser = argparse.ArgumentParser(description='Experiments runner.')
-parser.add_argument("--temp-dir", type=str, default="/ray_temp", help="storage for temporary ray files")
-parser.add_argument("--local-dir", type=str, default="./ray_results", help="path to save checkpoints")
-parser.add_argument("-r", "--repeat", type=int, default=10, help="number of repetitions per experiment")
-parser.add_argument("--dbox-token", type=str, default=None, required=False,  # https://www.dropbox.com/developers/documentation/python
+parser.add_argument("--temp-dir",
+                    type=str,
+                    default="/ray_temp",
+                    help="storage for temporary ray files")
+parser.add_argument("--local-dir",
+                    type=str,
+                    default="./ray_results",
+                    help="path to save checkpoints")
+parser.add_argument("-r", "--repeat",
+                    type=int,
+                    default=7,
+                    help="number of repetitions per experiment")
+parser.add_argument("--dbox-token",
+                    type=str,
+                    default=None,
+                    required=False,  # https://www.dropbox.com/developers/documentation/python
                     help="App token for Dropbox where results should be uploaded")
-parser.add_argument("--dbox-dir", type=str, default='/experiment', required=False,
+parser.add_argument("--dbox-dir",
+                    type=str,
+                    default='/experiment',
+                    required=False,
                     help="Dropbox folder where results should be uploaded")
-parser.add_argument("--num-gpus", type=int, default=0)
-parser.add_argument("--checkpoint-freq", type=int, default=75000,
-                        help="save model once every time this many iterations are completed")
+parser.add_argument("--num-gpus",
+                    type=int, default=0)
+parser.add_argument("--checkpoint-freq",
+                    type=int, default=75000,
+                    help="save model once every time this many iterations are completed")
 
 args = parser.parse_args()
 
@@ -173,33 +190,8 @@ def upload_to_dropbox(run_result_folder, experiment_name):
                 write_to_log_ts(traceback.format_exc(), True)
 
 
-# DQN
-dqn_results_folder = os.path.join(args.local_dir, "dqn/")
-for scenario in scenarios:  # Run with default parameters
-    c_run_title = "dqn_{}_default".format(scenario)
-    c_folder = os.path.join(dqn_results_folder, c_run_title)
-    for pfx in range(args.repeat):
-        ivk_cmd = "python run_dqn.py --scenario={} --local-dir={} --add-postfix={} --temp-dir={} --num-gpus={} " \
-                  "--checkpoint-freq={}" \
-            .format(scenario, c_folder, str(pfx), args.temp_dir, args.num_gpus, args.checkpoint_freq)
-        if execute_command(ivk_cmd):
-            upload_to_dropbox(c_folder, 'dqn/{}_{}'.format(c_run_title, pfx))
-
 # MADDPG
 maddpg_results_folder = os.path.join(args.local_dir, "maddpg/")
-
-# Varying replay buffer
-var_replay_buffer_variations = [1000000, 100000, 10000]  # first one is the default value
-for scenario in scenarios:
-    for rb_var in var_replay_buffer_variations:
-        c_run_title = "maddpg_{}_rb_{}".format(scenario, rb_var)
-        c_folder = os.path.join(maddpg_results_folder, c_run_title)
-        for pfx in range(args.repeat):
-            ivk_cmd = "python run_maddpg.py --scenario={} --replay-buffer={} --local-dir={} --add-postfix={} " \
-                      "--temp-dir={} --num-gpus={} --checkpoint-freq={}" \
-                .format(scenario, rb_var, c_folder, str(pfx), args.temp_dir, args.num_gpus, args.checkpoint_freq)
-            if execute_command(ivk_cmd):
-                upload_to_dropbox(c_folder, 'maddpg/{}_{}'.format(c_run_title, pfx))
 
 # Standard experiments with varying numbers of steps
 var_steps_variations = [5, 10, 15]
@@ -227,6 +219,19 @@ for scenario in scenarios:
             if execute_command(ivk_cmd):
                 upload_to_dropbox(c_folder, 'maddpg/{}_{}'.format(c_run_title, pfx))
 
+# Varying replay buffer
+var_replay_buffer_variations = [1000000, 100000, 10000]  # first one is the default value
+for scenario in scenarios:
+    for rb_var in var_replay_buffer_variations:
+        c_run_title = "maddpg_{}_rb_{}".format(scenario, rb_var)
+        c_folder = os.path.join(maddpg_results_folder, c_run_title)
+        for pfx in range(args.repeat):
+            ivk_cmd = "python run_maddpg.py --scenario={} --replay-buffer={} --local-dir={} --add-postfix={} " \
+                      "--temp-dir={} --num-gpus={} --checkpoint-freq={}" \
+                .format(scenario, rb_var, c_folder, str(pfx), args.temp_dir, args.num_gpus, args.checkpoint_freq)
+            if execute_command(ivk_cmd):
+                upload_to_dropbox(c_folder, 'maddpg/{}_{}'.format(c_run_title, pfx))
+
 # Varying policy
 for scenario in scenarios:
     for pfx in range(args.repeat):
@@ -247,6 +252,21 @@ for scenario in scenarios:
             .format(scenario, "ddpg", c_folder, str(pfx), args.temp_dir, args.num_gpus, args.checkpoint_freq)
         if execute_command(ivk_cmd):
             upload_to_dropbox(c_folder, 'maddpg/{}_{}'.format(c_run_title_a, pfx))
+
+# DQN
+"""
+dqn_results_folder = os.path.join(args.local_dir, "dqn/")
+for scenario in scenarios:  # Run with default parameters
+    c_run_title = "dqn_{}_default".format(scenario)
+    c_folder = os.path.join(dqn_results_folder, c_run_title)
+    for pfx in range(args.repeat):
+        ivk_cmd = "python run_dqn.py --scenario={} --local-dir={} --add-postfix={} --temp-dir={} --num-gpus={} " \
+                  "--checkpoint-freq={}" \
+            .format(scenario, c_folder, str(pfx), args.temp_dir, args.num_gpus, args.checkpoint_freq)
+        if execute_command(ivk_cmd):
+            upload_to_dropbox(c_folder, 'dqn/{}_{}'.format(c_run_title, pfx))
+"""
+
 
 # PPO
 """
