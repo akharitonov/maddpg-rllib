@@ -30,6 +30,7 @@ docker run \
  -e dboxtoken=YOUR_TOKEN \
  -e dboxdir=/epxeriment_1 \
  -e repeats=5 \
+ -e scenario=-1 \
  --name maddpg-rllib \
  -v maddpg-rllib-vtmp:/ray_temp \
  -v maddpg-rllib-vres:/ray_results \
@@ -53,6 +54,13 @@ docker rm maddpg-rllib-dummy
 
 If you want the results to be uploaded to Dropbox, you'll need to setup an app in your account [App console](https://www.dropbox.com/developers/apps) in order to get a token.
 
+Cleanup
+
+```
+docker stop maddpg-rllib
+docker container rm -v maddpg-rllib
+```
+
 ---
 
 ## Running in docker (CUDA)
@@ -69,6 +77,7 @@ As in the case with Tensorflow images, omit `-e dboxtoken=...` and `-e dboxdir=.
 docker run \
  --gpus all \
  -e repeats=5 \
+ -e scenario=-1 \
  -e dboxtoken=YOUR_TOKEN \
  -e dboxdir=/epxeriment_1 \
  --name maddpg-rllib-cuda \
@@ -81,7 +90,7 @@ docker run \
 Cleanup
 ```
 docker stop maddpg-rllib-cuda
-docker rm maddpg-rllib-cuda
+docker container rm -v maddpg-rllib-cuda
 ```
 
 

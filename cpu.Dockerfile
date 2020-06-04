@@ -39,4 +39,4 @@ VOLUME ["/ray_temp", "/ray_results"]
 RUN chmod 777 ./scripts/execute.sh
 
 # Run experiments
-ENTRYPOINT /code/scripts/execute.sh ${repeats} 0 ${dboxtoken} ${dboxdir}
+ENTRYPOINT /code/scripts/execute.sh ${repeats} ${scenario} 0 ${dboxtoken} ${dboxdir}

@@ -53,4 +53,4 @@ RUN find ${CONDA_PATH} -type d -exec chmod 777 {} \;
 VOLUME ["/ray_temp", "/ray_results"]
 
 # Run experiments
-ENTRYPOINT /code/scripts/execute_in_conda.sh ${repeats} 1 ${dboxtoken} ${dboxdir}
+ENTRYPOINT /code/scripts/execute_in_conda.sh ${repeats} ${scenario} 1 ${dboxtoken} ${dboxdir}
