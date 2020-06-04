@@ -193,21 +193,21 @@ def upload_to_dropbox(run_result_folder, experiment_name):
 # MADDPG
 maddpg_results_folder = os.path.join(args.local_dir, "maddpg/")
 
-# Standard experiments with varying numbers of steps
-var_steps_variations = [5, 10, 15]
+# Standard experiments with varying gamma
+var_gamma_variations = [0.95, 0.75, 0.50, 0.35, 0.15]
 for scenario in scenarios:
-    for n_steps in var_steps_variations:
-        c_run_title = "maddpg_{0}_n_steps_{1}".format(scenario, n_steps)
+    for gamma_var in var_gamma_variations:
+        c_run_title = "maddpg_{0}_gamma_{1:1.2e}".format(scenario, gamma_var)
         c_folder = os.path.join(maddpg_results_folder, c_run_title)
         for pfx in range(args.repeat):
-            ivk_cmd = "python run_maddpg.py --scenario={} --n-step={} --local-dir={} --add-postfix={} --temp-dir={} " \
+            ivk_cmd = "python run_maddpg.py --scenario={} --gamma={} --local-dir={} --add-postfix={} --temp-dir={} " \
                       "--num-gpus={} --checkpoint-freq={}" \
-                .format(scenario, n_steps, c_folder, str(pfx), args.temp_dir, args.num_gpus, args.checkpoint_freq)
+                .format(scenario, gamma_var, c_folder, str(pfx), args.temp_dir, args.num_gpus, args.checkpoint_freq)
             if execute_command(ivk_cmd):
                 upload_to_dropbox(c_folder, 'maddpg/{}_{}'.format(c_run_title, pfx))
 
 # Standard experiments with varying learning rate
-var_lr_variations = [1e-1, 1e-2, 1, 1e+1, 1e+2]
+var_lr_variations = [1e-3, 1e-2, 1e-1, 1, 1e+1, 1e+2]
 for scenario in scenarios:
     for lr_var in var_lr_variations:
         c_run_title = "maddpg_{0}_lr_{1:1.2e}".format(scenario, lr_var)
@@ -252,6 +252,20 @@ for scenario in scenarios:
             .format(scenario, "ddpg", c_folder, str(pfx), args.temp_dir, args.num_gpus, args.checkpoint_freq)
         if execute_command(ivk_cmd):
             upload_to_dropbox(c_folder, 'maddpg/{}_{}'.format(c_run_title_a, pfx))
+
+# Standard experiments with varying numbers of steps
+var_steps_variations = [5, 10, 15]
+for scenario in scenarios:
+    for n_steps in var_steps_variations:
+        c_run_title = "maddpg_{0}_n_steps_{1}".format(scenario, n_steps)
+        c_folder = os.path.join(maddpg_results_folder, c_run_title)
+        for pfx in range(args.repeat):
+            ivk_cmd = "python run_maddpg.py --scenario={} --n-step={} --local-dir={} --add-postfix={} --temp-dir={} " \
+                      "--num-gpus={} --checkpoint-freq={}" \
+                .format(scenario, n_steps, c_folder, str(pfx), args.temp_dir, args.num_gpus, args.checkpoint_freq)
+            if execute_command(ivk_cmd):
+                upload_to_dropbox(c_folder, 'maddpg/{}_{}'.format(c_run_title, pfx))
+
 
 # DQN
 """
