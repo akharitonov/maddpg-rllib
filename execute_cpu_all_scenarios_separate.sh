@@ -15,26 +15,9 @@ REPEATS=${4:-3}
 docker build -t ${PFX}maddpg-rllib:latest -f cpu.Dockerfile . --no-cache
 
 # run each scenario in a separate container
-IDX=0
-docker run -d -e dboxtoken=${DBOX_TOKEN} -e dboxdir=${DBOX_FOLDER}/scen_${IDX} -e repeats=${REPEATS} -e scenario=${IDX} --name ${PFX}maddpg-rllib_${IDX} \
--v ${PFX}maddpg-rllib-vtmp_${IDX}:/ray_temp -v ${PFX}maddpg-rllib-vres_${IDX}:/ray_results --shm-size=8gb ${PFX}maddpg-rllib:latest
-
-IDX=1
-docker run -d -e dboxtoken=${DBOX_TOKEN} -e dboxdir=${DBOX_FOLDER}/scen_${IDX} -e repeats=${REPEATS} -e scenario=${IDX} --name ${PFX}maddpg-rllib_${IDX} \
--v ${PFX}maddpg-rllib-vtmp_${IDX}:/ray_temp -v ${PFX}maddpg-rllib-vres_${IDX}:/ray_results --shm-size=8gb ${PFX}maddpg-rllib:latest
-
-IDX=2
-docker run -d -e dboxtoken=${DBOX_TOKEN} -e dboxdir=${DBOX_FOLDER}/scen_${IDX} -e repeats=${REPEATS} -e scenario=${IDX} --name ${PFX}maddpg-rllib_${IDX} \
--v ${PFX}maddpg-rllib-vtmp_${IDX}:/ray_temp -v ${PFX}maddpg-rllib-vres_${IDX}:/ray_results --shm-size=8gb ${PFX}maddpg-rllib:latest
-
-IDX=3
-docker run -d -e dboxtoken=${DBOX_TOKEN} -e dboxdir=${DBOX_FOLDER}/scen_${IDX} -e repeats=${REPEATS} -e scenario=${IDX} --name ${PFX}maddpg-rllib_${IDX} \
--v ${PFX}maddpg-rllib-vtmp_${IDX}:/ray_temp -v ${PFX}maddpg-rllib-vres_${IDX}:/ray_results --shm-size=8gb ${PFX}maddpg-rllib:latest
-
-IDX=4
-docker run -d -e dboxtoken=${DBOX_TOKEN} -e dboxdir=${DBOX_FOLDER}/scen_${IDX} -e repeats=${REPEATS} -e scenario=${IDX} --name ${PFX}maddpg-rllib_${IDX} \
--v ${PFX}maddpg-rllib-vtmp_${IDX}:/ray_temp -v ${PFX}maddpg-rllib-vres_${IDX}:/ray_results --shm-size=8gb ${PFX}maddpg-rllib:latest
-
-IDX=5
-docker run -d -e dboxtoken=${DBOX_TOKEN} -e dboxdir=${DBOX_FOLDER}/scen_${IDX} -e repeats=${REPEATS} -e scenario=${IDX} --name ${PFX}maddpg-rllib_${IDX} \
--v ${PFX}maddpg-rllib-vtmp_${IDX}:/ray_temp -v ${PFX}maddpg-rllib-vres_${IDX}:/ray_results --shm-size=8gb ${PFX}maddpg-rllib:latest
+max=5
+for IDX in $(seq 0 $max)
+do
+    docker run -d -e dboxtoken=${DBOX_TOKEN} -e dboxdir=${DBOX_FOLDER}/scen_${IDX} -e repeats=${REPEATS} -e scenario=${IDX} --name ${PFX}maddpg-rllib_${IDX} \
+    -v ${PFX}maddpg-rllib-vtmp_${IDX}:/ray_temp -v ${PFX}maddpg-rllib-vres_${IDX}:/ray_results --shm-size=8gb ${PFX}maddpg-rllib:latest
+done
