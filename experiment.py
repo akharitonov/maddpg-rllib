@@ -183,17 +183,17 @@ def upload_to_dropbox(run_result_folder, experiment_name):
             if not cleanup_only:
                 # If Dropbox upload is active for this run upload relevant files
                 if os.path.isfile(full_f_params):
-                    upload(full_f_params, args.dbox_dir, experiment_name, f_params)
+                    upload_with_retries(full_f_params, args.dbox_dir, experiment_name, f_params)
                 else:
                     write_to_log_ts('File not found: ' + full_f_params, False)
 
                 if os.path.isfile(full_f_progress):
-                    upload(full_f_progress, args.dbox_dir, experiment_name, f_progress)
+                    upload_with_retries(full_f_progress, args.dbox_dir, experiment_name, f_progress)
                 else:
                     write_to_log_ts('File not found: ' + full_f_progress, False)
 
                 if os.path.isfile(full_f_result):
-                    upload(full_f_result, args.dbox_dir, experiment_name, f_result)
+                    upload_with_retries(full_f_result, args.dbox_dir, experiment_name, f_result)
                 else:
                     write_to_log_ts('File not found: ' + full_f_result, False)
             try:
