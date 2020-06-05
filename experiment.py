@@ -47,6 +47,13 @@ parser.add_argument("--scenario",
 
 args = parser.parse_args()
 
+gamma_exp = True
+lr_exp = True
+buffer_exp = True
+step_exp = True
+tau_exp = True
+policy_exp = True
+
 # Scenarios to run
 scenarios = ["simple_speaker_listener",
              "simple_push",
@@ -55,7 +62,7 @@ scenarios = ["simple_speaker_listener",
              "simple_spread",
              "simple_adversary"]
 
-if args.scenario > 0:
+if args.scenario >= 0:  # select only a particular scenario
     scenarios = [scenarios[args.scenario]]
 
 log_file = os.path.join(args.local_dir, "_log.txt")
@@ -129,12 +136,21 @@ def upload(file_to_upload, folder, subfolder, name, overwrite=False):
             client_modified=datetime(*time.gmtime(mtime)[:6]),
             mute=True)
         print('uploaded as', res.name.encode('utf8'))
-        return res
+        return True
     except ApiError as err:
         write_to_log_ts('Dropbox error: ' + err.error, True)
-        return None
     except Exception:
         write_to_log_ts('Dropbox general error: ' + traceback.format_exc(), True)
+    return False
+
+
+def upload_with_retries(file_to_upload, folder, subfolder, name, overwrite=False, retries=3):
+    for r in range(0, retries):
+        res = upload(file_to_upload=file_to_upload, folder=folder, subfolder=subfolder, name=name, overwrite=overwrite)
+        if res:
+            break
+        else:
+            write_to_log_ts('Failed to upload file "{}", attempt: {}.'.format(file_to_upload, r), True)
 
 
 def upload_log_to_dropbox():
@@ -200,79 +216,97 @@ def upload_to_dropbox(run_result_folder, experiment_name):
 # MADDPG
 maddpg_results_folder = os.path.join(args.local_dir, "maddpg/")
 try:
-    # Standard experiments with varying gamma
-    var_gamma_variations = [0.95, 0.75, 0.50, 0.35, 0.15]
-    for scenario in scenarios:
-        for gamma_var in var_gamma_variations:
-            c_run_title = "maddpg_{0}_gamma_{1:1.2e}".format(scenario, gamma_var)
-            c_folder = os.path.join(maddpg_results_folder, c_run_title)
+    if gamma_exp:
+        # Standard experiments with varying gamma
+        var_gamma_variations = [0.95, 0.75, 0.50, 0.35, 0.15]
+        for scenario in scenarios:
+            for gamma_var in var_gamma_variations:
+                c_run_title = "maddpg_{0}_gamma_{1:1.2e}".format(scenario, gamma_var)
+                c_folder = os.path.join(maddpg_results_folder, c_run_title)
+                for pfx in range(args.repeat):
+                    ivk_cmd = "python run_maddpg.py --scenario={} --gamma={} --local-dir={} --add-postfix={} --temp-dir={} " \
+                              "--num-gpus={} --checkpoint-freq={}" \
+                        .format(scenario, gamma_var, c_folder, str(pfx), args.temp_dir, args.num_gpus, args.checkpoint_freq)
+                    if execute_command(ivk_cmd):
+                        upload_to_dropbox(c_folder, 'maddpg/{}_{}'.format(c_run_title, pfx))
+
+    if lr_exp:
+        # Standard experiments with varying learning rate
+        var_lr_variations = [1e-3, 1e-2, 1e-1, 1, 1e+1, 1e+2]
+        for scenario in scenarios:
+            for lr_var in var_lr_variations:
+                c_run_title = "maddpg_{0}_lr_{1:1.2e}".format(scenario, lr_var)
+                c_folder = os.path.join(maddpg_results_folder, c_run_title)
+                for pfx in range(args.repeat):
+                    ivk_cmd = "python run_maddpg.py --scenario={} --lr={} --local-dir={} --add-postfix={} --temp-dir={} " \
+                              "--num-gpus={} --checkpoint-freq={}" \
+                        .format(scenario, lr_var, c_folder, str(pfx), args.temp_dir, args.num_gpus, args.checkpoint_freq)
+                    if execute_command(ivk_cmd):
+                        upload_to_dropbox(c_folder, 'maddpg/{}_{}'.format(c_run_title, pfx))
+    if buffer_exp:
+        # Varying replay buffer
+        var_replay_buffer_variations = [1000000, 100000, 10000]  # first one is the default value
+        for scenario in scenarios:
+            for rb_var in var_replay_buffer_variations:
+                c_run_title = "maddpg_{}_rb_{}".format(scenario, rb_var)
+                c_folder = os.path.join(maddpg_results_folder, c_run_title)
+                for pfx in range(args.repeat):
+                    ivk_cmd = "python run_maddpg.py --scenario={} --replay-buffer={} --local-dir={} --add-postfix={} " \
+                              "--temp-dir={} --num-gpus={} --checkpoint-freq={}" \
+                        .format(scenario, rb_var, c_folder, str(pfx), args.temp_dir, args.num_gpus, args.checkpoint_freq)
+                    if execute_command(ivk_cmd):
+                        upload_to_dropbox(c_folder, 'maddpg/{}_{}'.format(c_run_title, pfx))
+
+    if step_exp:
+        # Standard experiments with varying numbers of steps
+        var_steps_variations = [1, 5, 10, 15]
+        for scenario in scenarios:
+            for n_steps in var_steps_variations:
+                c_run_title = "maddpg_{0}_n_steps_{1}".format(scenario, n_steps)
+                c_folder = os.path.join(maddpg_results_folder, c_run_title)
+                for pfx in range(args.repeat):
+                    ivk_cmd = "python run_maddpg.py --scenario={} --n-step={} --local-dir={} --add-postfix={} --temp-dir={} " \
+                              "--num-gpus={} --checkpoint-freq={}" \
+                        .format(scenario, n_steps, c_folder, str(pfx), args.temp_dir, args.num_gpus, args.checkpoint_freq)
+                    if execute_command(ivk_cmd):
+                        upload_to_dropbox(c_folder, 'maddpg/{}_{}'.format(c_run_title, pfx))
+
+    if tau_exp:
+        # Standard experiments with varying tau
+        var_tau_variations = [1, 0.1, 0.01, 0.001]
+        for scenario in scenarios:
+            for tau_var in var_tau_variations:
+                c_run_title = "maddpg_{0}_tau_{1:1.2e}".format(scenario, tau_var)
+                c_folder = os.path.join(maddpg_results_folder, c_run_title)
+                for pfx in range(args.repeat):
+                    ivk_cmd = "python run_maddpg.py --scenario={} --tau={} --local-dir={} --add-postfix={} --temp-dir={} " \
+                              "--num-gpus={} --checkpoint-freq={}" \
+                        .format(scenario, tau_var, c_folder, str(pfx), args.temp_dir, args.num_gpus,
+                                args.checkpoint_freq)
+                    if execute_command(ivk_cmd):
+                        upload_to_dropbox(c_folder, 'maddpg/{}_{}'.format(c_run_title, pfx))
+
+    if policy_exp:
+        # Varying policy
+        for scenario in scenarios:
             for pfx in range(args.repeat):
-                ivk_cmd = "python run_maddpg.py --scenario={} --gamma={} --local-dir={} --add-postfix={} --temp-dir={} " \
+                # Good: DDPG
+                c_run_title_g = "maddpg_{}_policy_good_ddpg".format(scenario)
+                c_folder = os.path.join(maddpg_results_folder, c_run_title_g)
+                ivk_cmd = "python run_maddpg.py --scenario={} --good-policy={} --local-dir={} --add-postfix={} --temp-dir={} " \
                           "--num-gpus={} --checkpoint-freq={}" \
-                    .format(scenario, gamma_var, c_folder, str(pfx), args.temp_dir, args.num_gpus, args.checkpoint_freq)
+                    .format(scenario, "ddpg", c_folder, str(pfx), args.temp_dir, args.num_gpus, args.checkpoint_freq)
                 if execute_command(ivk_cmd):
-                    upload_to_dropbox(c_folder, 'maddpg/{}_{}'.format(c_run_title, pfx))
+                    upload_to_dropbox(c_folder, 'maddpg/{}_{}'.format(c_run_title_g, pfx))
 
-    # Standard experiments with varying learning rate
-    var_lr_variations = [1e-3, 1e-2, 1e-1, 1, 1e+1, 1e+2]
-    for scenario in scenarios:
-        for lr_var in var_lr_variations:
-            c_run_title = "maddpg_{0}_lr_{1:1.2e}".format(scenario, lr_var)
-            c_folder = os.path.join(maddpg_results_folder, c_run_title)
-            for pfx in range(args.repeat):
-                ivk_cmd = "python run_maddpg.py --scenario={} --lr={} --local-dir={} --add-postfix={} --temp-dir={} " \
+                # Adv: DDPG
+                c_run_title_a = "maddpg_{}_policy_adv_ddpg".format(scenario)
+                c_folder = os.path.join(maddpg_results_folder, c_run_title_a)
+                ivk_cmd = "python run_maddpg.py --scenario={} --adv-policy={} --local-dir={} --add-postfix={} --temp-dir={} " \
                           "--num-gpus={} --checkpoint-freq={}" \
-                    .format(scenario, lr_var, c_folder, str(pfx), args.temp_dir, args.num_gpus, args.checkpoint_freq)
+                    .format(scenario, "ddpg", c_folder, str(pfx), args.temp_dir, args.num_gpus, args.checkpoint_freq)
                 if execute_command(ivk_cmd):
-                    upload_to_dropbox(c_folder, 'maddpg/{}_{}'.format(c_run_title, pfx))
-
-    # Varying replay buffer
-    var_replay_buffer_variations = [1000000, 100000, 10000]  # first one is the default value
-    for scenario in scenarios:
-        for rb_var in var_replay_buffer_variations:
-            c_run_title = "maddpg_{}_rb_{}".format(scenario, rb_var)
-            c_folder = os.path.join(maddpg_results_folder, c_run_title)
-            for pfx in range(args.repeat):
-                ivk_cmd = "python run_maddpg.py --scenario={} --replay-buffer={} --local-dir={} --add-postfix={} " \
-                          "--temp-dir={} --num-gpus={} --checkpoint-freq={}" \
-                    .format(scenario, rb_var, c_folder, str(pfx), args.temp_dir, args.num_gpus, args.checkpoint_freq)
-                if execute_command(ivk_cmd):
-                    upload_to_dropbox(c_folder, 'maddpg/{}_{}'.format(c_run_title, pfx))
-
-    # Varying policy
-    for scenario in scenarios:
-        for pfx in range(args.repeat):
-            # Good: DDPG
-            c_run_title_g = "maddpg_{}_policy_good_ddpg".format(scenario)
-            c_folder = os.path.join(maddpg_results_folder, c_run_title_g)
-            ivk_cmd = "python run_maddpg.py --scenario={} --good-policy={} --local-dir={} --add-postfix={} --temp-dir={} " \
-                      "--num-gpus={} --checkpoint-freq={}" \
-                .format(scenario, "ddpg", c_folder, str(pfx), args.temp_dir, args.num_gpus, args.checkpoint_freq)
-            if execute_command(ivk_cmd):
-                upload_to_dropbox(c_folder, 'maddpg/{}_{}'.format(c_run_title_g, pfx))
-
-            # Adv: DDPG
-            c_run_title_a = "maddpg_{}_policy_adv_ddpg".format(scenario)
-            c_folder = os.path.join(maddpg_results_folder, c_run_title_a)
-            ivk_cmd = "python run_maddpg.py --scenario={} --adv-policy={} --local-dir={} --add-postfix={} --temp-dir={} " \
-                      "--num-gpus={} --checkpoint-freq={}" \
-                .format(scenario, "ddpg", c_folder, str(pfx), args.temp_dir, args.num_gpus, args.checkpoint_freq)
-            if execute_command(ivk_cmd):
-                upload_to_dropbox(c_folder, 'maddpg/{}_{}'.format(c_run_title_a, pfx))
-
-    # Standard experiments with varying numbers of steps
-    var_steps_variations = [5, 10, 15]
-    for scenario in scenarios:
-        for n_steps in var_steps_variations:
-            c_run_title = "maddpg_{0}_n_steps_{1}".format(scenario, n_steps)
-            c_folder = os.path.join(maddpg_results_folder, c_run_title)
-            for pfx in range(args.repeat):
-                ivk_cmd = "python run_maddpg.py --scenario={} --n-step={} --local-dir={} --add-postfix={} --temp-dir={} " \
-                          "--num-gpus={} --checkpoint-freq={}" \
-                    .format(scenario, n_steps, c_folder, str(pfx), args.temp_dir, args.num_gpus, args.checkpoint_freq)
-                if execute_command(ivk_cmd):
-                    upload_to_dropbox(c_folder, 'maddpg/{}_{}'.format(c_run_title, pfx))
-
+                    upload_to_dropbox(c_folder, 'maddpg/{}_{}'.format(c_run_title_a, pfx))
 
     # DQN
     """

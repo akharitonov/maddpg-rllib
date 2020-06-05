@@ -72,6 +72,8 @@ def parse_args():
                         help="number of units in the mlp")
     parser.add_argument("--replay-buffer", type=int, default=1000000,
                         help="length of the replay buffer > 0")
+    parser.add_argument("--tau", type=float, default=0.01,
+                        help="Exploration (how fast we're updating weights in the network)")
 
     # Checkpoint
     parser.add_argument("--checkpoint-freq", type=int, default=7500,
@@ -187,7 +189,7 @@ def main(args):
                 "gamma": args.gamma,
 
                 # --- Exploration ---
-                "tau": 0.01,
+                "tau": args.tau,
 
                 # --- Replay buffer ---
                 "buffer_size": args.replay_buffer,  # int(10000), # int(1e6)
