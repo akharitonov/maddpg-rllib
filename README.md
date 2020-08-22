@@ -1,3 +1,7 @@
+***
+Fork of [wsjeon/maddpg-rllib](https://github.com/wsjeon/maddpg-rllib)
+***
+
 # Comparison experiments for MADDPG, DQN, PPO
 
 
@@ -93,10 +97,6 @@ docker stop maddpg-rllib-cuda
 docker container rm -v maddpg-rllib-cuda
 ```
 
-
-***
-Fork of [wsjeon/maddpg-rllib](https://github.com/wsjeon/maddpg-rllib)
-***
 
 # Multi-Agent DDPG in Ray/RLlib
 
